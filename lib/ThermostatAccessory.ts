@@ -71,7 +71,7 @@ export default class ThermostatAccessory  {
 		return (temperature * 1.8) + 32;
 	}
 
-	private static ToTargetHeatingCoolingState(mode : ThermostatMode)
+	private static ToTargetHeatingCoolingState(mode : ThermostatMode) : number
 	{
 		switch (mode) {
 			case ThermostatMode.Off:
@@ -92,10 +92,12 @@ export default class ThermostatAccessory  {
 				if (targetTemp > currentTemp) {
 					return Characteristic.CurrentHeatingCoolingState.HEAT;
 				}
+				break;
 			case ThermostatMode.Cool:
 				if (targetTemp < currentTemp) {
 					return Characteristic.CurrentHeatingCoolingState.COOL;
 				}
+				break;
 		}
 
 		return Characteristic.CurrentHeatingCoolingState.OFF;

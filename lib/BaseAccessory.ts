@@ -7,7 +7,6 @@ var Accessory, Service, Characteristic, uuid;
 
 export default abstract class BaseAccessory {
 	private data: any;
-	private key: string;
 	private api: EnergySelectIntegrationAPI;
 
 	protected log;
