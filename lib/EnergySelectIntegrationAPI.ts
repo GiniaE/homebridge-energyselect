@@ -62,4 +62,22 @@ export default class EnergySelectIntegrationAPI {
 			}.bind(this));
 
 	}
+
+	public updateDevice(device: string, data: any) : Promise<any>
+	{
+		return this.getDevice(device)
+			.bind(this)
+			.then(function(deviceData){
+				return rp({
+					method: 'PUT',
+					uri: this.BaseUrl + device,
+					headers: {
+						"X-PortalUser-Premise": this.PremiseId,
+						"X-PortalUser-Login": this.UserLogin,
+						"X-PortalUser-Token": this.UserToken
+					},
+					json: Object.assign({}, deviceData, data)
+				});
+			})
+	}
 }

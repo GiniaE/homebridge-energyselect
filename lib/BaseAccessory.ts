@@ -46,6 +46,13 @@ export default abstract class BaseAccessory {
 			.catch(this.log.error);
 	}
 
+	protected ChangeData(dataChange: any) : Promise<any>
+	{
+		return this.api.updateDevice(this.getDeviceKey(), dataChange)
+			//TODO: Updated data should be refreshed when the queued job finishes
+			// .then(this.UpdateDataInternal.bind(this));
+	}
+
 	protected ReloadData() : Promise<any>
 	{
 		return this.api.getDevice(this.getDeviceKey())

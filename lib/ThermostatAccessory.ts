@@ -1,7 +1,9 @@
 
 import {changeBase} from "./Runtime";
 import EnergySelectIntegrationAPI from "./EnergySelectIntegrationAPI";
+import * as Promise from 'bluebird';
 
+const InternalContext = 'internal';
 
 var BaseAccessory, Service, Characteristic, uuid;
 
@@ -10,6 +12,7 @@ export default class ThermostatAccessory  {
 	// Base class methods
 	private addService: (any) => any;
 	private getService: (any) => any;
+	private ChangeData: (any) => Promise<any>;
 	private services: any[];
 	private log;
 
@@ -25,9 +28,14 @@ export default class ThermostatAccessory  {
 	constructor(log, api: EnergySelectIntegrationAPI, deviceData) {
 		BaseAccessory.call(this, log, api, deviceData);
 
+		var svc = this.getService(Service.Thermostat);
+		svc.getCharacteristic(Characteristic.TargetTemperature)
+			.on('set', this.setTargetTemperature.bind(this));
+		svc.getCharacteristic(Characteristic.TargetHeatingCoolingState)
+			.on('set', this.setTargetHeatingCoolingState.bind(this));
+		
 		/*
 		// Debug
-		var svc = this.getService(Service.Thermostat);
 		for (var i in svc.characteristics)
 		{
 			var c = svc.characteristics[i];
@@ -36,7 +44,7 @@ export default class ThermostatAccessory  {
 				log.debug(this.displayName + " changed from: " + args.oldValue + " to: " + args.newValue);
 			});
 		}
-		 */
+		*/
 	}
 
 	// Abstract Implementation
@@ -49,16 +57,43 @@ export default class ThermostatAccessory  {
 			.setValue(Characteristic.TemperatureDisplayUnits.FAHRENHEIT);
 
 		svc.getCharacteristic(Characteristic.TargetTemperature)
-			.setValue(ThermostatAccessory.fahrenheitToCelsius(deviceData.set_point));
+			.setValue(ThermostatAccessory.fahrenheitToCelsius(deviceData.set_point), null, InternalContext);
 
 		svc.getCharacteristic(Characteristic.CurrentTemperature)
 			.setValue(ThermostatAccessory.fahrenheitToCelsius(deviceData.display_temperature));
 
 		svc.getCharacteristic(Characteristic.TargetHeatingCoolingState)
-			.setValue(ThermostatAccessory.ToTargetHeatingCoolingState(deviceData.mode));
+			.setValue(ThermostatAccessory.ToTargetHeatingCoolingState(deviceData.mode), null, InternalContext);
 
 		svc.getCharacteristic(Characteristic.CurrentHeatingCoolingState)
 			.setValue(ThermostatAccessory.DetermineCurrentHeatingCoolingState(deviceData.mode, deviceData.set_point, deviceData.display_temperature));
+	}
+
+	private setTargetTemperature(temperature: number, callback, context: string): void {
+		if (context == InternalContext) {
+			callback();
+			return;
+		}
+		this.ChangeData({
+			set_point: ThermostatAccessory.celsiusToFahrenheit(temperature),
+			hold_type: "temporary_until_schedule_changes"
+		})
+		.finally(function() {
+			callback();
+		});
+	}
+
+	private setTargetHeatingCoolingState(state: number, callback, context: string): void {
+		if (context == InternalContext) {
+			callback();
+			return;
+		}
+		this.ChangeData({
+			mode: ThermostatAccessory.FromTargetHeatingCoolingState(state)
+		})
+		.finally(function() {
+			callback();
+		});
 	}
 
 	private static fahrenheitToCelsius(temperature:number) : number
@@ -82,6 +117,20 @@ export default class ThermostatAccessory  {
 				return Characteristic.TargetHeatingCoolingState.COOL;
 			default:
 				return Characteristic.TargetHeatingCoolingState.OFF;
+		}
+	}
+
+	private static FromTargetHeatingCoolingState(state : number) : ThermostatMode
+	{
+		switch (state) {
+			case Characteristic.TargetHeatingCoolingState.OFF:
+				return ThermostatMode.Off;
+			case Characteristic.TargetHeatingCoolingState.HEAT:
+				return ThermostatMode.Heat;
+			case Characteristic.TargetHeatingCoolingState.COOL:
+				return ThermostatMode.Cool;
+			default:
+				return ThermostatMode.Off;
 		}
 	}
 
