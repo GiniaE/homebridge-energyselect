@@ -4,7 +4,7 @@ import * as _ from 'lodash';
 
 export default class EnergySelectIntegrationAPI {
 
-	private static defaultURL = "https://ws5.powerportal.com/gpc/engagement/api_users/sign_in";
+	private static defaultURL = "https://gpc.powerportal.com/gpc/engagement/api_users/sign_in";
 
 	private UserLogin:string;
 	private UserToken:string;
